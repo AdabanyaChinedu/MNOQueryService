@@ -58,7 +58,7 @@ namespace MNOQueryService.Application.UseCases.MNOQuerys.Queries
 
                 try
                 {
-                    // Set OptimizeOperatorQuery to false to disable caching
+                    // Set OptimizeOperatorQuery to false in appsettings to disable caching
                     var cacheResult = optimizeQuery ? await this.redisService.GetAsync<CountryDto>(countryCode) : default;
 
                     if (cacheResult != default)

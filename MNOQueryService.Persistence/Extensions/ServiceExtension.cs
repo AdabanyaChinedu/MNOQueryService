@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using MNOQueryService.SharedLibrary.Model.ResponseModel;
 
 namespace MNOQueryService.Persistence.Extensions
 {
