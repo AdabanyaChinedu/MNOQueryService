@@ -1,6 +1,5 @@
 ﻿using MNOQueryService.Application.UseCases.MNOQuerys.ViewModels;
 using MediatR;
-using MNOQueryService.SharedLibrary.Model.ResponseModel;
 using FluentValidation;
 using MNOQueryService.Domain.Interfaces;
 using MNOQueryService.SharedLibrary.Exceptions;

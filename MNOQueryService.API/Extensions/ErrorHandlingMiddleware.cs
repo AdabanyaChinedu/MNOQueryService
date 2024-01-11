@@ -1,5 +1,4 @@
 ﻿using MNOQueryService.SharedLibrary.Exceptions;
-using MNOQueryService.SharedLibrary.Model.ResponseModel;
 using System.Net;
 using System.Text.Json;
 
