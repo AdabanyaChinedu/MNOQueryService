@@ -4,6 +4,8 @@ using MNOQueryService.Persistence.RedisContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using MNOQueryService.SharedLibrary.Model.ResponseModel;
 
 namespace MNOQueryService.Persistence.Extensions
 {
@@ -20,7 +22,7 @@ namespace MNOQueryService.Persistence.Extensions
             {
                 options.Configuration = configuration["Redis:Configuration"];
             });
-            services.AddSingleton<IRedisService, RedisService>();
+            services.AddSingleton<IRedisService, RedisService>();            
             return services;
         }
     }

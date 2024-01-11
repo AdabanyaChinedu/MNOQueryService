@@ -4,6 +4,9 @@ using MNOQueryService.Persistence.Seed;
 using MNOQueryService.Application.Extensions;
 using MNOQueryService.Persistence.Extensions;
 using MNOQueryService.API.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using MNOQueryService.SharedLibrary.Model.AppSettings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +16,9 @@ builder.Services.AddApplicationServices()
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<AppOptimization>(builder.Configuration.GetSection("AppOptimization"));
+builder.Services.AddSingleton(provider => provider.GetRequiredService<IOptions<AppOptimization>>().Value);
 
 var app = builder.Build();
 

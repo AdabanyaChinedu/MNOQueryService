@@ -30,15 +30,7 @@ namespace MNOQueryService.API.Extensions
         private Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             var code = HttpStatusCode.InternalServerError;
-            var problemDetails = new Result<string>
-            {
-                ErrorFlag = true,
-                Response = exception.Message,
-                Message = exception.Message,
-                Title = exception.Message,
-                Detail = exception.StackTrace,
-                Status = StatusCodes.Status500InternalServerError,
-            };
+            var errorMessage = string.Empty;
 
             switch (exception)
             {
@@ -46,24 +38,24 @@ namespace MNOQueryService.API.Extensions
                     code = HttpStatusCode.BadRequest;
                     context.Response.ContentType = "application/json";
                     context.Response.StatusCode = (int)code;
-                    problemDetails.Detail = JsonSerializer.Serialize(new { validationException.Failures });
-                    problemDetails.Status = StatusCodes.Status400BadRequest;
+                    errorMessage = JsonSerializer.Serialize(new { ErrorMessage = validationException.Failures.FirstOrDefault().Value });
                     break;
                 case EntityNotFoundException entityNotFoundException:
                     code = HttpStatusCode.NotFound;
                     context.Response.ContentType = "application/json";
                     context.Response.StatusCode = (int)code;
-                    problemDetails.Detail = string.IsNullOrEmpty(entityNotFoundException.Message) ? "Entity not found.Please provide a valid search criteria and try again." : entityNotFoundException.Message;
-                    problemDetails.Status = StatusCodes.Status404NotFound;                    
+                    errorMessage = !string.IsNullOrEmpty(entityNotFoundException.Message) ? entityNotFoundException.Message : "Entity not found.Please provide a valid search criteria and try again.";
+                    errorMessage = JsonSerializer.Serialize(new { ErrorMessage = errorMessage });
                     break;                
                 default:
                     context.Response.ContentType = "application/json";
                     context.Response.StatusCode = (int)code;
-                    problemDetails.Detail = "An error occured on the payload";
+                    errorMessage = !string.IsNullOrEmpty(exception.Message) ? exception.Message : "An error occured on the payload";
+                    errorMessage = JsonSerializer.Serialize(new { ErrorMessage = errorMessage });
                     break;
             }
 
-            return context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+            return context.Response.WriteAsync(errorMessage);
         }
     }
 }

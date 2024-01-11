@@ -1,6 +1,7 @@
 ﻿using MNOQueryService.Domain.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace MNOQueryService.Persistence.RedisContext
 {

@@ -7,6 +7,9 @@ using MNOQueryService.SharedLibrary.Exceptions;
 using MNOQueryService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using MNOQueryService.SharedLibrary.Model.AppSettings;
+using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
 
 namespace MNOQueryService.Application.UseCases.MNOQuerys.Queries
 {
@@ -31,35 +34,78 @@ namespace MNOQueryService.Application.UseCases.MNOQuerys.Queries
         {
             private readonly IMNODbContext mNODbContext;
             private readonly IConfiguration configuration;
+            private readonly IRedisService redisService;
+            private readonly AppOptimization appOptimization;
+            private readonly IMapper mapper;
 
-            public QueryHandler(IMNODbContext mNODbContext, IConfiguration configuration)
+            public QueryHandler(IMNODbContext mNODbContext,
+                IRedisService redisService,
+                AppOptimization appOptimization,
+                IMapper mapper)
             {
                 this.mNODbContext = mNODbContext;
-                this.configuration = configuration;
+                this.redisService = redisService;
+                this.appOptimization = appOptimization;
+                this.mapper = mapper;
             }
 
             public async Task<OperatorResponse> Handle(Query request, CancellationToken cancellationToken)
             {
+                bool optimizeQuery = this.appOptimization.RedisSettings.OptimizeOperatorQuery;
+                int cacheTimeInMinute = this.appOptimization.RedisSettings.CacheTimeInMinute;
+
                 string countryCode = request.phoneNumber.Substring(0, 3);
 
-                var dbResult = await this.mNODbContext.Countries
-                           .Include(c => c.Operators)
-                          .FirstOrDefaultAsync(c => c.CountryCode == countryCode, cancellationToken);
+                try
+                {
+                    // Set OptimizeOperatorQuery to false to disable caching
+                    var cacheResult = optimizeQuery ? await this.redisService.GetAsync<CountryDto>(countryCode) : default;
 
-                if (dbResult == null)
+                    if (cacheResult != default)
+                    {
+                        return BuildResponse(cacheResult, request.phoneNumber);
+                    }
+
+
+                    var dbResult = await this.mNODbContext.Countries
+                               .Include(c => c.Operators)
+                               .FirstOrDefaultAsync(c => c.CountryCode == countryCode, cancellationToken);
+
+                    if (dbResult == null)
+                    {
+                        throw new EntityNotFoundException($"Operator details for {request.phoneNumber} does not exist");
+                    }
+
+                    var countryDto = this.mapper.Map<CountryDto>(dbResult);
+
+                    if (optimizeQuery)
+                    {
+                        await this.redisService.SetAsync(countryCode, countryDto, cacheTimeInMinute);
+                    }
+
+                    return BuildResponse(countryDto, request.phoneNumber);
+                }
+                catch (EntityNotFoundException ex)
                 {
-                    throw new EntityNotFoundException($"Operator details for {request.phoneNumber} does not exist");
-                }       
-                
-                var response = new OperatorResponse
+                    throw ex;
+                }
+                catch (Exception ex)
+                {                    
+                    throw new Exception("An error occured while trying to fetch operator details. Kindly contact Administrator");
+                }
+            }
+
+            private OperatorResponse BuildResponse(CountryDto country, string phonenumber)
+            {
+               return new OperatorResponse
                 {
-                    Number = request.phoneNumber,
+                    Number = phonenumber,
                     Country = new OperatorCountryResponse
                     {
-                        CountryCode = dbResult.CountryCode,
-                        Name = dbResult.Name,
-                        CountryIso = dbResult.CountryIso,
-                        CountryDetails = dbResult.Operators.Select(o => new OperatorCountryDetailsResponse
+                        CountryCode = country.CountryCode,
+                        Name = country.Name,
+                        CountryIso = country.CountryIso,
+                        CountryDetails = country.Operators.Select(o => new OperatorCountryDetailsResponse
                         {
                             Operator = o.Operator,
                             OperatorCode = o.OperatorCode
@@ -67,7 +113,6 @@ namespace MNOQueryService.Application.UseCases.MNOQuerys.Queries
                     }
                 };
 
-                return response;
             }
         }
     }
