@@ -57,7 +57,8 @@ namespace MNOQueryService.Application.UseCases.MNOQuerys.Queries
 
                 try
                 {
-                    // Set OptimizeOperatorQuery to false in appsettings to disable caching
+                    // Set OptimizeOperatorQuery to true in appsettings to enable caching
+                    // and update redis connectionstring to your redis connectionstring
                     var cacheResult = optimizeQuery ? await this.redisService.GetAsync<CountryDto>(countryCode) : default;
 
                     if (cacheResult != default)
